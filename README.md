@@ -1,8 +1,9 @@
 
 # Smart-City---Dashboard-de-surveillance-de-la-qualite-de-l-air
+
+
 Système IoT Intelligent pour la Surveillance de la Qualité de l’Air dans les Smart Cities
 =======
-# Système IoT Intelligent (Simulé) de Surveillance de la Qualité de l’Air pour Smart City
 
 Projet académique Python qui transforme le dépôt **Air-Quality-Prediction-Model** en une architecture IoT simulée complète, démontrable localement.
 
