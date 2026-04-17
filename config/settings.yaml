@@ -1,0 +1,102 @@
+project:
+  name: "Smart City Air Quality IoT (Simulated)"
+  timezone: "Africa/Casablanca"
+  sensor_id: "SIM-AQ-01"
+
+data:
+  source_csv: "data/raw/air_quality_combined_source.csv"
+  fallback_csv: "data/raw/low_cost_sensor_data.csv"
+  use_source_timestamp_if_available: true
+  required_fields:
+    - pm25
+    - pm10
+    - co
+    - temperature
+    - humidity
+
+simulation:
+  interval_seconds: 2.0
+  loop: true
+  max_records: null
+  demo_interval_seconds: 0.4
+
+preprocessing:
+  enforce_non_negative: true
+  missing_value_strategy: "forward_fill_then_default"
+  defaults:
+    pm25: 20.0
+    pm10: 40.0
+    co: 0.5
+    no2: 20.0
+    so2: 5.0
+    o3: 25.0
+    temperature: 26.0
+    humidity: 60.0
+    wind_speed: 2.5
+  column_aliases:
+    "PM2.5": "pm25"
+    "pm2.5": "pm25"
+    "PM10": "pm10"
+    "CO": "co"
+    "NO2": "no2"
+    "SO2": "so2"
+    "O3": "o3"
+    "temperature": "temperature"
+    "humidity": "humidity"
+    "wind_speed": "wind_speed"
+    "date": "source_date"
+    "timestamp": "source_date"
+
+alerts:
+  consecutive_breaches: 3
+  thresholds:
+    pm25:
+      warning: 35.0
+      critical: 55.0
+    pm10:
+      warning: 75.0
+      critical: 150.0
+    co:
+      warning: 4.0
+      critical: 9.0
+    temperature:
+      warning: 35.0
+      critical: 40.0
+    humidity:
+      warning: 80.0
+      critical: 90.0
+
+mqtt:
+  enabled: true
+  host: "localhost"
+  port: 1883
+  keepalive: 60
+  username: ""
+  password: ""
+  client_id: "smartcity-air-quality-publisher"
+  fallback_to_file: true
+  topics:
+    data: "air_quality/data"
+    alerts: "air_quality/alerts"
+    status: "air_quality/status"
+
+dashboard:
+  history_window: 150
+  refresh_seconds: 2
+  data_log_path: "logs/stream_data.jsonl"
+  alert_log_path: "logs/alerts_history.csv"
+
+ml:
+  enabled_by_default: false
+  model_path: "models/aqi_pm25_model.joblib"
+  metrics_path: "models/aqi_pm25_metrics.json"
+  target_column: "pm25"
+  feature_columns:
+    - pm10
+    - no2
+    - so2
+    - co
+    - o3
+    - temperature
+    - humidity
+    - wind_speed

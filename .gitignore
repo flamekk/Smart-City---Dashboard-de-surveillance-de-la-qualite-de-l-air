@@ -1,0 +1,29 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.tmp_pytest/
+pytest-cache-files-*/
+
+# Runtime outputs
+logs/*.log
+logs/*.jsonl
+logs/*.csv
+!logs/.gitkeep
+!logs/alerts_history_example.csv
+
+# ML artifacts
+models/*.joblib
+models/*.pkl
+models/*.json
+!models/.gitkeep
+
+# Streamlit cache
+.streamlit/
+
+# Source snapshot
+source_repo/
