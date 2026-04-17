@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-04-17T20:41:03+00:00",
+  "sensor_id": "SIM-AQ-01",
+  "measurements": {
+    "pm25": 107.97,
+    "pm10": 151.76,
+    "co": 5.45,
+    "no2": 41.15,
+    "so2": 13.77,
+    "o3": 80.74,
+    "temperature": 19.29,
+    "humidity": 33.28,
+    "wind_speed": 3.02,
+    "co2_equivalent": 1048.31,
+    "tvoc_estimated": 338.2
+  },
+  "aqi_estimated": 178,
+  "aqi_category": "unhealthy",
+  "risk_score": 63.32,
+  "status": "critical"
+}
