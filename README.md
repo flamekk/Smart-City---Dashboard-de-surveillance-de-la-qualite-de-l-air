@@ -267,4 +267,4 @@ Cette implémentation valide une architecture IoT Smart City en mode simulé :
 - analytics ML optionnelle.
 
 L’absence de capteurs physiques est compensée par une stratégie de simulation réaliste, ce qui permet une démonstration technique complète et crédible du système logiciel.
->>>>>>> origin/codex/simulated-iot-air-quality-dashboard
+
