@@ -35,6 +35,8 @@ SERIES_META: Dict[str, Dict[str, str]] = {
     "measurements_temperature": {"label": "Temperature", "color": "#2CA02C"},
     "measurements_humidity": {"label": "Humidity", "color": "#17BECF"},
     "aqi_estimated": {"label": "AQI", "color": "#7F1D1D"},
+    "ml_prediction_predicted_pm25": {"label": "Predicted PM2.5", "color": "#C2185B"},
+    "ml_prediction_predicted_aqi": {"label": "Predicted AQI", "color": "#283593"},
 }
 
 AQI_META: Dict[str, Dict[str, str]] = {
@@ -177,6 +179,11 @@ def _extract_records(raw_payloads: List[Dict[str, Any]]) -> pd.DataFrame:
     return flattened
 
 
+def _has_ml_predictions(df: pd.DataFrame) -> bool:
+    required = {"ml_prediction_predicted_pm25", "ml_prediction_predicted_aqi", "ml_prediction_predicted_category"}
+    return required.issubset(set(df.columns))
+
+
 def _render_simulation_banner() -> None:
     st.markdown(
         """
@@ -269,6 +276,50 @@ def _render_kpis(latest: pd.Series, category_key: str) -> None:
             SERIES_META["measurements_co2_equivalent"]["color"],
         )
 
+    # Show optional ML inference KPIs only when prediction fields are present.
+    has_ml = all(
+        key in latest_data
+        for key in ["ml_prediction_predicted_pm25", "ml_prediction_predicted_aqi", "ml_prediction_predicted_category"]
+    )
+    if not has_ml:
+        return
+
+    predicted_pm25 = _get_float(latest_data, "ml_prediction_predicted_pm25", 0.0)
+    predicted_aqi = int(_get_float(latest_data, "ml_prediction_predicted_aqi", 0))
+    predicted_category_key = _normalize_category(latest_data.get("ml_prediction_predicted_category"))
+    predicted_category_meta = AQI_META[predicted_category_key]
+    predicted_badge = (
+        f"<span class='aqi-badge' style='background:{predicted_category_meta['color']};'>"
+        f"{predicted_category_meta['label']}</span>"
+    )
+
+    measured_pm25 = _get_float(latest_data, "measurements_pm25", 0.0)
+    pm25_gap = predicted_pm25 - measured_pm25
+    gap_prefix = "+" if pm25_gap >= 0 else ""
+
+    row3 = st.columns(3)
+    with row3[0]:
+        _kpi_card(
+            "PM2.5 predit (ML)",
+            f"{predicted_pm25:.2f}",
+            SERIES_META["ml_prediction_predicted_pm25"]["color"],
+            "Prediction du modele en ligne.",
+        )
+    with row3[1]:
+        _kpi_card(
+            "AQI predit (ML)",
+            f"{predicted_aqi} {predicted_badge}",
+            SERIES_META["ml_prediction_predicted_aqi"]["color"],
+            "Categorie predite par le modele.",
+        )
+    with row3[2]:
+        _kpi_card(
+            "Ecart PM2.5 (pred - mesure)",
+            f"{gap_prefix}{pm25_gap:.2f}",
+            "#455A64",
+            "Difference instantanee prediction vs mesure.",
+        )
+
 
 def _render_timeseries_chart(chart_df: pd.DataFrame, columns: List[str], title: str, y_title: str) -> None:
     available = [col for col in columns if col in chart_df.columns]
@@ -319,6 +370,9 @@ def _build_history_table(df: pd.DataFrame, rows: int) -> pd.DataFrame:
         "measurements_pm25",
         "measurements_pm10",
         "measurements_co2_equivalent",
+        "ml_prediction_predicted_pm25",
+        "ml_prediction_predicted_aqi",
+        "ml_prediction_predicted_category",
         "measurements_temperature",
         "measurements_humidity",
         "risk_score",
@@ -334,6 +388,10 @@ def _build_history_table(df: pd.DataFrame, rows: int) -> pd.DataFrame:
         view["status"] = view["status"].astype(str).str.upper()
     if "aqi_category" in view.columns:
         view["aqi_category"] = view["aqi_category"].map(lambda x: AQI_META[_normalize_category(x)]["label"])
+    if "ml_prediction_predicted_category" in view.columns:
+        view["ml_prediction_predicted_category"] = view["ml_prediction_predicted_category"].map(
+            lambda x: AQI_META[_normalize_category(x)]["label"]
+        )
 
     rename_map = {
         "timestamp": "Timestamp",
@@ -343,6 +401,9 @@ def _build_history_table(df: pd.DataFrame, rows: int) -> pd.DataFrame:
         "measurements_pm25": "PM2.5 (ug/m3)",
         "measurements_pm10": "PM10 (ug/m3)",
         "measurements_co2_equivalent": "CO2 equivalent (ppm)",
+        "ml_prediction_predicted_pm25": "Pred PM2.5 (ML)",
+        "ml_prediction_predicted_aqi": "Pred AQI (ML)",
+        "ml_prediction_predicted_category": "Pred AQI Category (ML)",
         "measurements_temperature": "Temperature (C)",
         "measurements_humidity": "Humidity (%)",
         "risk_score": "Risk score (%)",
@@ -407,6 +468,7 @@ def main() -> None:
         points_to_show = st.slider("Points recents (graphes)", min_value=30, max_value=max_points, value=min(120, max_points), step=10)
         history_rows = st.slider("Lignes historique", min_value=10, max_value=100, value=25, step=5)
         alerts_to_show = st.slider("Alertes recentes a afficher", min_value=5, max_value=30, value=12, step=1)
+        show_ml_predictions = st.toggle("Afficher les predictions ML", value=True)
         selected_pollutants = st.multiselect(
             "Variables polluants/environnement",
             options=[
@@ -437,6 +499,12 @@ def main() -> None:
         st.warning("Aucune donnee live. Lance le pipeline avec `python -m src.main`.")
         return
 
+    ml_available = _has_ml_predictions(df)
+    if show_ml_predictions and not ml_available:
+        st.info("Predictions ML non detectees dans le flux. Lance le pipeline avec `python -m src.main --ml`.")
+    if ml_available:
+        st.caption("Inference ML active: le flux contient des champs de prediction (`ml_prediction_*`).")
+
     latest = df.iloc[-1]
     category_key = _render_global_status(latest)
     _render_kpis(latest, category_key)
@@ -460,6 +528,21 @@ def main() -> None:
         title="Evolution du score de risque et de l'AQI",
         y_title="Risque / AQI",
     )
+
+    if show_ml_predictions and ml_available:
+        st.subheader("Predictions ML")
+        _render_timeseries_chart(
+            chart_df=chart_data,
+            columns=["measurements_pm25", "ml_prediction_predicted_pm25"],
+            title="PM2.5 mesure vs PM2.5 predit (ML)",
+            y_title="PM2.5 (ug/m3)",
+        )
+        _render_timeseries_chart(
+            chart_df=chart_data,
+            columns=["aqi_estimated", "ml_prediction_predicted_aqi"],
+            title="AQI estime vs AQI predit (ML)",
+            y_title="AQI",
+        )
 
     st.subheader("Historique recent")
     history_table = _build_history_table(df, rows=history_rows)
