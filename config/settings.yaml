@@ -90,6 +90,9 @@ ml:
   enabled_by_default: false
   model_path: "models/aqi_pm25_model.joblib"
   metrics_path: "models/aqi_pm25_metrics.json"
+  comparison_plot_path: "models/actual_vs_predicted.html"
+  predictions_csv_path: "models/actual_vs_predicted.csv"
+  selection_metric: "rmse"
   target_column: "pm25"
   feature_columns:
     - pm10
@@ -100,3 +103,43 @@ ml:
     - temperature
     - humidity
     - wind_speed
+  candidate_models:
+    linear_regression:
+      enabled: true
+      fit_intercept: true
+    random_forest:
+      enabled: true
+      n_estimators: 250
+      max_depth: 12
+      min_samples_leaf: 4
+      max_features: "sqrt"
+      random_state: 42
+      n_jobs: 1
+    gradient_boosting:
+      enabled: true
+      n_estimators: 150
+      learning_rate: 0.05
+      max_depth: 2
+      subsample: 1.0
+      random_state: 42
+    extra_trees:
+      enabled: true
+      n_estimators: 250
+      max_depth: 12
+      min_samples_leaf: 4
+      max_features: "sqrt"
+      random_state: 42
+      n_jobs: 1
+    svr_rbf:
+      enabled: true
+      C: 25.0
+      epsilon: 0.2
+      gamma: "scale"
+    mlp_regressor:
+      enabled: true
+      hidden_layer_sizes: [64]
+      alpha: 0.001
+      learning_rate_init: 0.001
+      max_iter: 1400
+      early_stopping: true
+      random_state: 42
