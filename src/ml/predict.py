@@ -18,6 +18,8 @@ class MLPredictor:
         if not self.model_path.exists():
             raise FileNotFoundError(f"Model file not found: {self.model_path}")
         payload = joblib.load(self.model_path)
+        self.model_name = payload.get("model_name", "selected_model")
+        self.model_label = payload.get("model_label", self.model_name)
         self.pipeline = payload["pipeline"]
         self.feature_columns = payload["feature_columns"]
         self.target_column = payload["target_column"]

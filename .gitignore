@@ -20,6 +20,9 @@ logs/*.csv
 models/*.joblib
 models/*.pkl
 models/*.json
+models/*.html
+models/*.csv
+models/*_candidates/
 !models/.gitkeep
 
 # Streamlit cache
